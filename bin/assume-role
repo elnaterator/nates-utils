@@ -4,6 +4,10 @@ role=$1
 
 if [ -z "$role" ]; then
   echo "Enter role arn or 'revert' or 'show' or 'open':"
+  if [ -f ~/.aws/role-history ]; then
+    echo "Recent roles:"
+    tail -n 10 ~/.aws/role-history
+  fi
   read role
 fi
 
@@ -22,6 +26,9 @@ if [ "$role" = "open" ]; then
   code ~/.aws/credentials
   exit 0
 fi
+
+# add role to history
+echo $role >> ~/.aws/role-history
 
 # current datetime stamp
 now=$(date +"%Y%m%d-%H%M%S")
