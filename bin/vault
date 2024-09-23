@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+
+# Simple vault for storing passwords and other secrets encrypted using RSA and secured with a master password.
+
+vault_home=$HOME/.vault
+private_key=$vault_home/id_rsa_vault
+public_key=$vault_home/id_rsa_vault.pub
+vault_secrets_dir=$vault_home/secrets
+
+trap "exit 1" TERM
+export TOP_PID=$$
+
+nuke_vault() {
+  echo -n "Are you sure you want to nuke the vault? This is irreversible and you will lose all secrets. (y/n): "
+  read -r choice
+  if [[ $choice != "y" ]]; then
+    echo "aborting nuke."
+    exit 1
+  fi
+  echo "nuking vault..."
+  rm -rf $vault_home
+  echo "done." >&2
+}
+
+get_master_passphrase() {
+  local passphrase
+  echo -n "master passphrase: " >&2
+  read -s passphrase
+  echo "" >&2
+  echo $passphrase
+}
+
+create_rsa_key() {
+  echo "creating rsa key pair..."
+  local passphrase=$(get_master_passphrase)
+  openssl genpkey -algorithm RSA -out $private_key -pkeyopt rsa_keygen_bits:2048 -quiet -pass pass:$passphrase
+  openssl rsa -pubout -in $private_key -out $public_key
+  echo "done."
+}
+
+get_option() {
+  PS3=$1
+  shift
+  local opts=("$@")
+  local choice
+  select opt in "${opts[@]}"; do
+    if [[ -n $opt ]]; then
+      echo "$opt"
+      break
+    else
+      echo "invalid option, try again." >&2
+    fi
+  done
+}
+
+add_secret() {
+  echo "adding secret..."
+  echo -n "enter an id for the secret: "
+  read -r id
+  echo -n "enter the secret: "
+  read -s secret
+  echo -n "$secret" | openssl pkeyutl -encrypt -pubin -inkey $public_key -keyform PEM | openssl base64 > $vault_secrets_dir/$id
+  echo ""
+  echo "done."
+}
+
+list_secret_ids() {
+  echo "fetching secrets..." >&2
+  local ids=$(ls $vault_secrets_dir)
+  if [[ -z $ids ]]; then
+    echo "No secrets found, try adding one first." >&2
+    kill -s TERM $TOP_PID
+  fi
+  echo $ids
+}
+
+fetch_secret() {
+  local ids=$(list_secret_ids)
+  local id=$(get_option "which secret do you want to retrieve?: " $ids)
+  local passphrase=$(get_master_passphrase)
+  echo "secret id    : $id"
+  echo -n "secret value : "
+  cat $vault_secrets_dir/$id | openssl base64 -d | openssl pkeyutl -decrypt -inkey $private_key -passin pass:$passphrase
+  echo ""
+  echo ""
+}
+
+remove_secret() {
+  set -e
+  local ids=$(list_secret_ids) || exit 1
+  local id=$(get_option "which secret do you want to remove?: " $ids)
+  rm $vault_secrets_dir/$id
+  echo ""
+  echo "done."
+}
+
+#
+# Main vault execution
+#
+
+echo ""
+echo " ___      ___  __      __    __   __    __________ "
+echo " \  \    /  / /  \    |  |  |  | |  |  |___    ___|"
+echo "  \  \  /  / /    \   |  |  |  | |  |      |  |    "
+echo "   \  \/  / /  /\  \  |  |  |  | |  |      |  |    "
+echo "    \    / /  ____  \ |  |__|  | |  |____  |  |    "
+echo "     \__/ /__/    \__\ \______/  |_______| |__|    "
+echo ""
+echo ""
+
+if [[ -f $private_key ]]; then
+  echo ""
+else
+  echo "Setting up vault..."
+  mkdir -p $vault_home
+  mkdir -p $vault_secrets_dir
+  create_rsa_key
+  echo ""
+fi
+
+choice=$(get_option "what do you want to do?: " "retrieve secret" "add secret" "remove secret" "nuke vault")
+echo "Choice: $choice"
+echo ""
+
+if [[ $choice == "retrieve secret" ]]; then
+  fetch_secret
+elif [[ $choice == "add secret" ]]; then
+  add_secret
+elif [[ $choice == "remove secret" ]]; then
+  remove_secret
+elif [[ $choice == "nuke vault" ]]; then
+  nuke_vault
+fi

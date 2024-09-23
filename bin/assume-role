@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+role=$1
+
+if [ -z "$role" ]; then
+  echo "Enter role arn or 'revert' or 'show' or 'open':"
+  read role
+fi
+
+if [ "$role" = "revert" ]; then
+  mv ~/.aws/credentials.bak ~/.aws/credentials
+  echo "Credentials cleaned up."
+  exit 0
+fi
+
+if [ "$role" = "show" ]; then
+  cat ~/.aws/credentials
+  exit 0
+fi
+
+if [ "$role" = "open" ]; then
+  code ~/.aws/credentials
+  exit 0
+fi
+
+# current datetime stamp
+now=$(date +"%Y%m%d-%H%M%S")
+
+# assume role
+aws sts assume-role --role-arn $role --role-session-name "$now" > /tmp/assume-role-output.json
+
+# get result code from last command
+result=$?
+
+# see creds
+cat /tmp/assume-role-output.json
+
+# if result code is not 0, exit
+if [ $result -ne 0 ]; then
+  # clean up tmp file
+  rm /tmp/assume-role-output.json
+  echo "Error assuming role. Exiting."
+  exit 1
+fi
+
+# find and replace [default] with [default-bak] in ~/.aws/credentials
+sed -i.bak 's/\[default\]/\[default-bak\]/g' ~/.aws/credentials
+
+# append creds from tmp file to ~/.aws/credentials
+jq -r '.Credentials | "[default]\naws_access_key_id = \(.AccessKeyId)\naws_secret_access_key = \(.SecretAccessKey)\naws_session_token = \(.SessionToken)"' /tmp/assume-role-output.json >> ~/.aws/credentials
+
+echo ""
+echo "New credentials in ~/.aws/credentials:"
+echo ""
+cat ~/.aws/credentials
+
+# cleanup
+rm /tmp/assume-role-output.json

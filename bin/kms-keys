@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+export AWS_PAGER=""
+filter=$1
+
+# get aliases and keys
+aliases=$(aws kms list-aliases --query 'Aliases[].{AliasName:AliasName,KeyId:TargetKeyId}' --output json)
+keys=$(aws kms list-keys --query 'Keys[].{KeyId:KeyId,KeyArn:KeyArn}' --output json)
+
+# filter the aliases
+aliases=$(echo $aliases | jq --arg filter "$filter" 'map(select(.AliasName | contains($filter)))')
+
+# join the two JSON objects based on the KeyId
+data=$(jq -s '.[0] as $aliases | .[1] as $keys | $aliases[] | . as $alias | $keys[] | select(.KeyId == $alias.KeyId) | . + $alias' <(echo $aliases) <(echo $keys))
+data=$(echo $data | jq -s .)
+
+# convert to table
+echo $data | jq -r '["AliasName", "KeyArn"], (.[] | [.AliasName, .KeyArn]) | @tsv' | column -t

@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+
+#
+# ANSI Settings
+#
+
+# text colors
+echo "\033[30mblack\033[0m"
+echo "\033[31mred\033[0m"
+echo "\033[32mgreen\033[0m"
+echo "\033[33myellow\033[0m"
+echo "\033[34mblue\033[0m"
+echo "\033[35mmagenta\033[0m"
+echo "\033[36mcyan\033[0m"
+echo "\033[37mwhite\033[0m"
+
+# bright text colors
+echo "\033[90mbright black\033[0m"
+echo "\033[91mbright red\033[0m"
+echo "\033[92mbright green\033[0m"
+echo "\033[93mbright yellow\033[0m"
+echo "\033[94mbright blue\033[0m"
+echo "\033[95mbright magenta\033[0m"
+echo "\033[96mbright cyan\033[0m"
+echo "\033[97mbright white\033[0m"
+
+# background colors
+echo "\033[40mblack\033[0m"
+echo "\033[41mred\033[0m"
+echo "\033[42mgreen\033[0m"
+echo "\033[43myellow\033[0m"
+echo "\033[44mblue\033[0m"
+echo "\033[45mmagenta\033[0m"
+echo "\033[46mcyan\033[0m"
+echo "\033[47mwhite\033[0m"
+
+# bright background colors
+echo "\033[100mbright black\033[0m"
+echo "\033[101mbright red\033[0m"
+echo "\033[102mbright green\033[0m"
+echo "\033[103mbright yellow\033[0m"
+echo "\033[104mbright blue\033[0m"
+echo "\033[105mbright magenta\033[0m"
+echo "\033[106mbright cyan\033[0m"
+echo "\033[107mbright white\033[0m"
+
+# text styles
+echo "\033[0mreset\033[0m"
+echo "\033[1mbold\033[0m"
+echo "\033[2mdim\033[0m"
+echo "\033[3mitalic\033[0m"
+echo "\033[4munderline\033[0m"
+echo "\033[5mblink\033[0m"
+echo "\033[6mfast blink\033[0m"
+echo "\033[7minvert\033[0m"
+echo "\033[8minvisible\033[0m"
+echo "\033[9mstrikethrough\033[0m"
+
+# rgb foreground
+echo "\033[38;2;255;0;0mrgb red\033[0m"
+echo "\033[38;2;0;255;0mrgb green\033[0m"
+echo "\033[38;2;0;0;255mrgb blue\033[0m"
+
+# rgb background
+echo "\033[48;2;255;0;0mrgb red\033[0m"
+echo "\033[48;2;0;255;0mrgb green\033[0m"
+echo "\033[48;2;0;0;255mrgb blue\033[0m"
+
+# 256 color foreground
+for i in {0..255}; do echo "\033[38;5;${i}mcolor${i}\033[0m"; done
+
+# 256 color background
+for i in {0..255}; do echo "\033[48;5;${i}mcolor${i}\033[0m"; done
+
+# framing
+echo "\033[51mframed\033[0m"
+echo "\033[52mencircled\033[0m"
+echo "\033[53moverlined\033[0m"
+
+# ideogram
+echo "\033[60mideogram underline\033[0m"
+echo "\033[61mideogram double underline\033[0m"
+echo "\033[62mideogram overline\033[0m"
+echo "\033[63mideogram double overline\033[0m"
+echo "\033[64mideogram stress marking\033[0m"

@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+
+# This script will take in any given string, replace each letter with a random different letter, and print the result.
+
+import sys
+import random
+import string
+
+
+def mutate(s):
+    chars = string.ascii_letters + string.digits
+    return "".join(random.choice(chars) if c.isalnum() else c for c in s)
+
+
+def usage():
+    print("Mutate")
+    print(
+        "  Replaces each letter with a random different letter, and print the result."
+    )
+    print(f"Usage:")
+    print(f"  {sys.argv[0]} -s <string>")
+    print(f"  {sys.argv[0]} -f <path-to-file>")
+    sys.exit(1)
+
+
+if __name__ == "__main__":
+
+    if len(sys.argv) != 3:
+        usage()
+
+    if sys.argv[1] == "-s":
+        print(mutate(sys.argv[2]))
+
+    elif sys.argv[1] == "-f":
+        with open(sys.argv[2], "r") as f:
+            for line in f:
+                print(mutate(line), end="")
+    else:
+        usage()

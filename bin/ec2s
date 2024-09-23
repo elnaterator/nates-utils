@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+#
+# Filter ec2 instances by tag:Name and display as table
+# Usage:
+#  ec2s "<filter>"
+#  ec2s "prefix*"
+#
+
+export AWS_PAGER=""
+aws ec2 describe-instances \
+    --filters "Name=tag:Name,Values=$1" \
+    --query "Reservations[].Instances[].{Name: Tags[?Key=='Name'].Value | [0], PublicIP: PublicIpAddress, PrivateIP: PrivateIpAddress, Type: InstanceType, ID: InstanceId, State: State.Name}" \
+    --output table
