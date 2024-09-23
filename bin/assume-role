@@ -2,13 +2,15 @@
 
 role=$1
 
+tmpfile="$HOME/.aws/assume-role-output.json"
+
 if [ -z "$role" ]; then
   if [ -f ~/.aws/role-history ]; then
     echo "Recent roles:"
     tail -n 10 ~/.aws/role-history
   fi
   echo ""
-  echo "Enter role arn or 'revert' or 'show' or 'open':"
+  echo "Enter role arn or one of revert|show|open|config:"
   read role
 fi
 
@@ -28,6 +30,18 @@ if [ "$role" = "open" ]; then
   exit 0
 fi
 
+if [ "$role" = "config" ]; then
+  echo "ls -ltrah ~/.aws: "
+  ls -ltrah ~/.aws
+  exit 0
+fi
+
+# validate role arn
+if [[ ! $role =~ ^arn:aws:iam::[0-9]+:role/.*$ ]]; then
+  echo "Invalid role arn. Exiting."
+  exit 1
+fi
+
 # add role to history if it doesn't exist
 if [ -f ~/.aws/role-history ]; then
   grep -q "$role" ~/.aws/role-history || echo "$role" >> ~/.aws/role-history
@@ -39,18 +53,18 @@ fi
 now=$(date +"%Y%m%d-%H%M%S")
 
 # assume role
-aws sts assume-role --role-arn $role --role-session-name "$now" > /tmp/assume-role-output.json
+aws sts assume-role --role-arn $role --role-session-name "$now" > $tmpfile
 
 # get result code from last command
 result=$?
 
 # see creds
-cat /tmp/assume-role-output.json
+cat $tmpfile
 
 # if result code is not 0, exit
 if [ $result -ne 0 ]; then
   # clean up tmp file
-  rm /tmp/assume-role-output.json
+  rm $tmpfile
   echo "Error assuming role. Exiting."
   exit 1
 fi
@@ -59,12 +73,9 @@ fi
 sed -i.bak 's/\[default\]/\[default-bak\]/g' ~/.aws/credentials
 
 # append creds from tmp file to ~/.aws/credentials
-jq -r '.Credentials | "[default]\naws_access_key_id = \(.AccessKeyId)\naws_secret_access_key = \(.SecretAccessKey)\naws_session_token = \(.SessionToken)"' /tmp/assume-role-output.json >> ~/.aws/credentials
+jq -r '.Credentials | "[default]\naws_access_key_id = \(.AccessKeyId)\naws_secret_access_key = \(.SecretAccessKey)\naws_session_token = \(.SessionToken)"' $tmpfile >> ~/.aws/credentials
 
 echo ""
 echo "New credentials in ~/.aws/credentials:"
 echo ""
 cat ~/.aws/credentials
-
-# cleanup
-rm /tmp/assume-role-output.json
