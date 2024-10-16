@@ -1,0 +1,30 @@
+#!/bin/bash
+
+SCRIPT_NAME=$(basename "$0")
+
+SUBNET_ID=$1
+if [[ -z "$SUBNET_ID" ]]; then
+  echo "Usage: '$SCRIPT_NAME <subnet_name>' or '$SCRIPT_NAME <subnet_id>'"
+  exit 1
+fi
+
+# if the subnet id starts with 'subnet-', then it's a subnet id
+if [[ $SUBNET_ID == subnet-* ]]; then
+  SUBNET_NAME=$(aws ec2 describe-subnets --subnet-ids "$SUBNET_ID" --query "Subnets[0].Tags[?Key=='Name'].Value" --output text)
+else
+  SUBNET_NAME=$SUBNET_ID
+  SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=tag:Name,Values=$SUBNET_NAME" --query "Subnets[0].SubnetId" --output text)
+fi
+
+echo "Subnet Name: $SUBNET_NAME"
+echo "Subnet ID: $SUBNET_ID"
+
+CIDR_BLOCK=$(aws ec2 describe-subnets --subnet-ids "$SUBNET_ID" --query "Subnets[0].CidrBlock" --output text)
+
+echo "Subnet CIDR: $CIDR_BLOCK"
+IFS='/' read -r -a CIDR_BLOCK_ARRAY <<< "$CIDR_BLOCK"
+
+USED_IPS=$(aws ec2 describe-network-interfaces --filters "Name=subnet-id,Values=$SUBNET_ID" | jq -r '.NetworkInterfaces[].PrivateIpAddresses[].PrivateIpAddress' | sort)
+
+echo "Used IPs:"
+echo "$USED_IPS"
