@@ -1,0 +1,5 @@
+HOURS=$1
+if [[ -z "$HOURS" ]]; then
+  HOURS=48
+fi
+git log --pretty=format:"%h - %an - %ad : %s" --no-merges --since="$HOURS hours ago" --date=format:'%Y-%m-%d %H:%M' | awk -F' - ' '{ printf "%-10s %-20s %-25s %s\n", $1, $2, $3, $4 }'
