@@ -78,9 +78,11 @@ fetch_secret() {
   local ids=$(list_secret_ids)
   local id=$(get_option "which secret do you want to retrieve?: " $ids)
   local passphrase=$(get_master_passphrase)
-  echo "secret id    : $id"
-  echo -n "secret value : "
-  cat $vault_secrets_dir/$id | openssl base64 -d | openssl pkeyutl -decrypt -inkey $private_key -passin pass:$passphrase
+  (
+    echo "secret id    : $id"
+    echo -n "secret value : "
+    cat $vault_secrets_dir/$id | openssl base64 -d | openssl pkeyutl -decrypt -inkey $private_key -passin pass:$passphrase
+  ) | less
   echo ""
   echo ""
 }
